@@ -583,6 +583,14 @@ class StreamingOrchestrator:
                         else ""
                     )
 
+                # Yield intermediate text so it accumulates in full_response
+                # Without this, text accompanying tool_calls is saved to context
+                # but never reaches execute()'s full_response, so render_message
+                # at the end of the turn never displays it.
+                if response_text:
+                    async for token in self._tokenize_stream(response_text):
+                        yield (token, iteration)
+
                 # Store structured content from response.content (our Pydantic models)
                 response_content = getattr(response, "content", None)
                 if response_content and isinstance(response_content, list):
